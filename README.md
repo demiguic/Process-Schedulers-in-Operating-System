@@ -1,4 +1,4 @@
-# Proces Scheduler in Operating System
+# Process Scheduler in Operating System
 
 In an operating system, a process scheduler is responsible for managing and prioritizing processes that are competing for CPU time. A process scheduler can be thought of as a traffic cop, determining which process should execute next, and for how long.
 
