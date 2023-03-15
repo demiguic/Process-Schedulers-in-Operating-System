@@ -4,12 +4,17 @@
 #include <pthread.h>
 
 #define NUM_THREADS 5
+#define CPU_TIME 10
 #define MAX_TIME 30
+
+double cpu_time = 10;
+double exe_time;
+int num_processes = NUM_THREADS;
 
 typedef struct
 {
-    int pid;        // ID do processo
-    int burst_time; // Tempo de processo restante
+    int pid;           // ID do processo
+    double burst_time; // Tempo de processo restante
     pthread_mutex_t mutex;
     pthread_cond_t cond;
 
@@ -18,7 +23,7 @@ typedef struct
 Process processes[NUM_THREADS]; // Vetor de processos
 
 void *process_function(void *arg);
-void *shortest_job_first();
+void *round_robin();
 
 int main()
 {
@@ -31,8 +36,9 @@ int main()
         processes[t].burst_time = rand() % MAX_TIME + 1; // Definindo um tempo de execução entre 1 e o tempo máximo
         pthread_mutex_init(&processes[t].mutex, NULL);
         pthread_cond_init(&processes[t].cond, NULL);
-        printf("Processo %d. Tempo de execução: %d\n", processes[t].pid, processes[t].burst_time);
+        printf("Processo %d. Tempo de execução: %.1fs\n", processes[t].pid, processes[t].burst_time);
     }
+
     printf("\n");
 
     // Criando uma thread para cada processo
@@ -44,7 +50,7 @@ int main()
 
     // Criando uma thread para o escalonador de processos
     pthread_t scheduler;
-    pthread_create(&scheduler, NULL, shortest_job_first, NULL);
+    pthread_create(&scheduler, NULL, round_robin, NULL);
 
     // Espera as threads terminarem
     for (int t = 0; t < NUM_THREADS; t++)
@@ -65,34 +71,33 @@ void *process_function(void *arg)
         pthread_mutex_lock(&process->mutex);
         pthread_cond_wait(&process->cond, &process->mutex);
         sleep(1); // Simula um processo
-        printf("Processo %d executado por %ds.\n", process->pid, process->burst_time);
-        process->burst_time = 0; // Executa completamente o processo
+        if (process->burst_time >= exe_time)
+        {
+            process->burst_time -= exe_time; // Diminui o tempo restante no valor de exe_time
+            printf("Processo %d executado por %.1fs. Restam %.1fs\n", process->pid, exe_time, process->burst_time);
+        }
+        else
+        {
+            process->burst_time = 0; // Tempo finalizado, caso o tempo de execução > tempo restante
+        }
         pthread_mutex_unlock(&process->mutex);
     }
-    printf("Processo %d finalizado.\n", process->pid);
+    num_processes--;
+    printf("Processo %d finalizado. Restam %d processos.\n", process->pid, num_processes);
     return NULL;
 }
 
-// Função comparadora de tempo de execução
-int compare_burst_time(const void *a, const void *b)
-{
-    const Process *p1 = (const Process *)a;
-    const Process *p2 = (const Process *)b;
-
-    return p1->burst_time - p2->burst_time;
-}
-
-void *shortest_job_first()
+// Função escalonadora
+void *round_robin()
 {
     while (1)
     {
-        // Ordena o vetor de processos de forma crescente quanto ao tempo de execução
-        qsort(processes, NUM_THREADS, sizeof(Process), compare_burst_time);
-        // Percorre o vetor de processos executando do menor ao maior, em relação ao tempo de execução.
+        // Percorre o vetor de processos permitindo que todos sejam executados de forma circular
         for (int t = 0; t < NUM_THREADS; t++)
         {
             pthread_mutex_lock(&processes[t].mutex);
             pthread_cond_signal(&processes[t].cond);
+            exe_time = cpu_time / num_processes; // Escalonador define o tempo de execução
             pthread_mutex_unlock(&processes[t].mutex);
             sleep(1);
         }

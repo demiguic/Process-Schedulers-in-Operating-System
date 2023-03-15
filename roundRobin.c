@@ -28,7 +28,7 @@ int main()
     // Criando as informações para cada processo
     for (int t = 0; t < NUM_THREADS; t++)
     {
-        processes[t].pid = t + 1;                  // Atribuição do ID
+        processes[t].pid = t + 1;                        // Atribuição do ID
         processes[t].burst_time = rand() % MAX_TIME + 1; // Definindo um tempo de execução entre 1 e o tempo máximo
         pthread_mutex_init(&processes[t].mutex, NULL);
         pthread_cond_init(&processes[t].cond, NULL);
@@ -66,9 +66,16 @@ void *process_function(void *arg)
     {
         pthread_mutex_lock(&process->mutex);
         pthread_cond_wait(&process->cond, &process->mutex);
-        printf("Executando processo %d. Tempo restante: %d.\n", process->pid, process->burst_time);
-        sleep(1);                       // Simula um processo
-        process->burst_time -= QUANTUM; // Diminui o tempo restante em QUANTUM
+        sleep(1); // Simula um processo
+        if (process->burst_time >= QUANTUM)
+        {
+            process->burst_time -= QUANTUM; // Diminui o tempo restante em QUANTUM
+            printf("Processo %d executado. Tempo restante: %d.\n", process->pid, process->burst_time);
+        }
+        else
+        {
+            process->burst_time = 0; // Zera o tempo caso Quantum > tempo restante
+        }
         pthread_mutex_unlock(&process->mutex);
     }
     printf("Processo %d finalizado.\n", process->pid);
