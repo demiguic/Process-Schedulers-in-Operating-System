@@ -94,19 +94,26 @@ void *priority_scheduling()
 {
     while (1)
     {
-        // Percorre o vetor de processos em busca da maior prioridade até a menor.
-        for (int prior = MAX_PRIORITY; prior >= 0; prior--)
+        int max_priority_idx = -1; // índice do processo com maior prioridade
+        int max_priority = -1;     // prioridade máxima
+        // Percorre o vetor de processos em busca do processo com a maior prioridade
+        for (int t = 0; t < NUM_THREADS; t++)
         {
-            for (int t = 0; t < NUM_THREADS; t++)
+            pthread_mutex_lock(&processes[t].mutex);
+            if (processes[t].priority > max_priority)
             {
-                if (processes[t].priority == prior)
-                {
-                    pthread_mutex_lock(&processes[t].mutex);
-                    pthread_cond_signal(&processes[t].cond);
-                    pthread_mutex_unlock(&processes[t].mutex);
-                    sleep(2);
-                }
+                max_priority = processes[t].priority;
+                max_priority_idx = t;
             }
+            pthread_mutex_unlock(&processes[t].mutex);
+        }
+        // Caso tenha encontrado um processo com prioridade válida, executa-o
+        if (max_priority_idx >= 0)
+        {
+            pthread_mutex_lock(&processes[max_priority_idx].mutex);
+            pthread_cond_signal(&processes[max_priority_idx].cond);
+            pthread_mutex_unlock(&processes[max_priority_idx].mutex);
+            sleep(2);
         }
     }
 }
