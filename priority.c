@@ -68,9 +68,17 @@ void *process_function(void *arg)
     {
         pthread_mutex_lock(&process->mutex);
         pthread_cond_wait(&process->cond, &process->mutex);
-        printf("Executando processo %d. Tempo restante: %d. Prioridade: %d\n", process->pid, process->burst_time, process->priority);
-        sleep(1);                       // Simula um processo
-        process->burst_time -= QUANTUM; // Diminui o tempo restante em QUANTUM
+        sleep(1); // Simula um processo
+
+        if (process->burst_time >= QUANTUM)
+        {
+            process->burst_time -= QUANTUM; // Diminui o tempo restante em QUANTUM
+            printf("Processo %d executado. Tempo restante: %d. Prioridade: %d\n", process->pid, process->burst_time, process->priority);
+        }
+        else
+        {
+            process->burst_time = 0; // Zera o tempo caso Quantum > tempo restante
+        }
         if (process->priority > 1)
         {
             process->priority--; // Prioridade decrementada em 1

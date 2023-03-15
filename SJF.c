@@ -64,8 +64,8 @@ void *process_function(void *arg)
     {
         pthread_mutex_lock(&process->mutex);
         pthread_cond_wait(&process->cond, &process->mutex);
-        printf("Executando processo %d. Executou por %ds.\n", process->pid, process->burst_time);
-        sleep(1);                // Simula um processo
+        sleep(1); // Simula um processo
+        printf("Processo %d executado por %ds.\n", process->pid, process->burst_time);
         process->burst_time = 0; // Executa completamente o processo
         pthread_mutex_unlock(&process->mutex);
     }
